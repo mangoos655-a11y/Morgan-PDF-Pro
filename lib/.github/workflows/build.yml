@@ -1,0 +1,57 @@
+name: Build Morgan PDF Pro APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+          channel: 'stable'
+
+      - name: Generate Android Folder & Configure Support
+        run: |
+          cp lib/main.dart /tmp/main.dart
+          cp pubspec.yaml /tmp/pubspec.yaml
+          
+          flutter create --platforms=android --project-name morgan_pdf --org com.morgan.pdf .
+          
+          cp /tmp/main.dart lib/main.dart
+          cp /tmp/pubspec.yaml pubspec.yaml
+          
+          # دعم التابلت القديم (API 21) وتفعيل MultiDex
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21\n        multiDexEnabled true/g' android/app/build.gradle
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 21\n        multiDexEnabled = true/g' android/app/build.gradle
+          
+          # إلغاء الإنترنت وإضافة صلاحيات قراءة الملفات للتابلت القديم
+          sed -i '/android.permission.INTERNET/d' android/app/src/main/AndroidManifest.xml
+          sed -i 's/<application/<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"\/>\n    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"\/>\n    <application android:requestLegacyExternalStorage="true"/g' android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="morgan_pdf"/android:label="Morgan PDF"/g' android/app/src/main/AndroidManifest.xml
+          
+          # إظهار التطبيق في قائمة تليجرام ومدير الملفات (Open With)
+          sed -i 's/<\/activity>/<intent-filter>\n                <action android:name="android.intent.action.VIEW" \/>\n                <action android:name="android.intent.action.SEND" \/>\n                <category android:name="android.intent.category.DEFAULT" \/>\n                <category android:name="android.intent.category.BROWSABLE" \/>\n                <data android:scheme="content" \/>\n                <data android:scheme="file" \/>\n                <data android:mimeType="application\/pdf" \/>\n            <\/intent-filter>\n        <\/activity>/g' android/app/src/main/AndroidManifest.xml
+
+      - name: Install Dependencies & Build APK
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Upload Ready APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Morgan-PDF-Pro-Installer
+          path: build/app/outputs/flutter-apk/app-release.apk
