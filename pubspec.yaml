@@ -1,0 +1,20 @@
+name: morgan_pdf_pro
+description: Morgan PDF Pro - Full Study Suite
+publish_to: 'none'
+version: 2.1.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  syncfusion_flutter_pdfviewer: ^24.2.7
+  shared_preferences: ^2.2.2
+  file_picker: ^6.1.1
+  wakelock_plus: ^1.1.4
+  share_plus: ^7.2.2
+  flutter_tts: ^3.8.5
+
+flutter:
+  uses-material-design: true
